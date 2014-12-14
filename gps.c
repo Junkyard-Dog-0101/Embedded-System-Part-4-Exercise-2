@@ -125,7 +125,7 @@ int			command_parser(char *cmd)
   tm.tm_min = atoi(buf);
   buf[1] = time[1];
   buf[0] = time[0];
-  tm.tm_hour = atoi(buf);
+  tm.tm_hour = atoi(buf) + 8;
   buf[1] = date[5];
   buf[0] = date[4];
   tm.tm_year = atoi(buf) + 100;
@@ -137,6 +137,7 @@ int			command_parser(char *cmd)
   tm.tm_mday = atoi(buf);
   timep = mktime(&tm);
   tv.tv_sec = timep;
+  printf("%s\n", asctime(localtime(&timep)));
   tv.tv_usec = 0;
   settimeofday(&tv, NULL);
   return (0);
@@ -167,19 +168,31 @@ int	main()
   int	nread;
   char	command[256];
   char	buf;
+  int	nset;
 
-  fd = open("/home/vesy_j/project/gpsdata.txt", O_RDONLY);
+  fd = open("/dev/ttySAC1", O_RDONLY);
   if (fd == -1)
-    exit(1);
+    {
+      printf("open failed\n");
+      exit(1);
+    }
+  nset = set_opt(fd, 4800, 8, 'N', 1);
+  if (nset == -1)
+    {
+      printf("set_opt failed\n");
+      exit(1);
+    }
   memset(command, '\0', 256);
   while	(1)
     {
       nread = read(fd, &buf, 1);
-      if (nread == 0)
-	break;
-      concat_command(command, buf);
+      if (nread > 0)
+	{
+	  concat_command(command, buf);
+	  if (buf == 'q')
+	    break;
+	}
     }
   close(fd);
   return (0);
 }
-
